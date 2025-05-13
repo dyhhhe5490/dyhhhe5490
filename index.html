@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .calculator {
+      background-color: #111;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .display, .preview {
+      font-size: 2em;
+      text-align: right;
+      padding: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .display {
+      background-color: #000;
+      color: #fff;
+      min-height: 2em;
+    }
+
+    .preview {
+      background-color: #333;
+      color: #aaa;
+      font-size: 1.2em;
+      margin-bottom: 10px;
+      min-height: 1.5em;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      font-size: 1.5em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    .grey {
+      background-color: #555;
+      color: #fff;
+    }
+
+    .dark-grey {
+      background-color: #333;
+      color: #fff;
+    }
+
+    .orange {
+      background-color: #ff9f0a;
+      color: #fff;
+    }
+
+    .zero {
+      grid-column: 1 / span 2;
+      width: 130px;
+      border-radius: 30px;
+      text-align: left;
+      padding-left: 25px;
+    }
+
+    .backspace {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+    }
+    
+    .backspace .big-symbol {
+        font-size: 1.5em;
+        line-height: 1;
+    }
+    
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display"></div>
+    <div class="preview">0</div>
+    <div class="buttons">
+      <button class="grey" id="clearOrBackspace" onclick="clearOrBackspace()">AC</button>
+      <button class="grey" onclick="changeSign()">±</button>
+      <button class="grey" onclick="calculatePercentage()">%</button>
+      <button class="orange" onclick="appendOperator(' ÷ ')">÷</button>
+
+      <button class="dark-grey" onclick="appendNumber('7')">7</button>
+      <button class="dark-grey" onclick="appendNumber('8')">8</button>
+      <button class="dark-grey" onclick="appendNumber('9')">9</button>
+      <button class="orange" onclick="appendOperator(' x ')">x</button>
+
+      <button class="dark-grey" onclick="appendNumber('4')">4</button>
+      <button class="dark-grey" onclick="appendNumber('5')">5</button>
+      <button class="dark-grey" onclick="appendNumber('6')">6</button>
+      <button class="orange" onclick="appendOperator(' - ')">-</button>
+
+      <button class="dark-grey" onclick="appendNumber('1')">1</button>
+      <button class="dark-grey" onclick="appendNumber('2')">2</button>
+      <button class="dark-grey" onclick="appendNumber('3')">3</button>
+      <button class="orange" onclick="appendOperator(' + ')">+</button>
+
+      <button class="dark-grey zero" onclick="appendNumber('0')">0</button>
+      <button class="dark-grey" onclick="appendDecimal()">.</button>
+      <button class="orange" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <script>
+    let display = document.querySelector('.display');
+    let preview = document.querySelector('.preview');
+    let clearOrBackspaceButton = document.getElementById('clearOrBackspace');
+    let currentExpression = '';
+
+    function updateDisplay() {
+      display.textContent = currentExpression || '0';
+      if (currentExpression) {
+        clearOrBackspaceButton.innerHTML = '<span class="big-symbol">⌫</span>';
+        clearOrBackspaceButton.classList.add('backspace');
+        clearOrBackspaceButton.onclick = backspace;
+      } else {
+        clearOrBackspaceButton.textContent = 'AC';
+        clearOrBackspaceButton.classList.remove('backspace');
+        clearOrBackspaceButton.onclick = clearDisplay;
+      }
+    }
+
+    function updatePreview(result) {
+      preview.textContent = result || '0';
+    }
+
+    function appendNumber(number) {
+      currentExpression += number;
+      updateDisplay();
+      try {
+        if (/[\d)]$/.test(currentExpression)) {
+          updatePreview(evaluate(currentExpression));
+        }
+      } catch {
+        updatePreview('Error');
+      }
+    }
+
+    function appendOperator(operator) {
+      if (currentExpression && !/[+\-x÷] $/.test(currentExpression)) {
+        currentExpression += operator;
+        updateDisplay();
+      }
+    }
+
+    function appendDecimal() {
+      const parts = currentExpression.split(/[\+\-\x÷]/);
+      const lastPart = parts[parts.length - 1];
+      if (!lastPart.includes('.')) {
+        currentExpression += '.';
+        updateDisplay();
+      }
+    }
+
+    function clearDisplay() {
+      currentExpression = '';
+      updateDisplay();
+      updatePreview('0');
+    }
+
+    function clearOrBackspace() {
+      if (currentExpression) {
+        backspace();
+      } else {
+        clearDisplay();
+      }
+    }
+
+    function backspace() {
+      currentExpression = currentExpression.slice(0, -1).trimEnd();
+      updateDisplay();
+      try {
+        updatePreview(evaluate(currentExpression));
+      } catch {
+        updatePreview('Error');
+      }
+    }
+
+    function changeSign() {
+      try {
+        const result = -1 * parseFloat(evaluate(currentExpression));
+        currentExpression = result.toString();
+        updateDisplay();
+        updatePreview(currentExpression);
+      } catch {
+        updatePreview('Error');
+      }
+    }
+
+    function calculatePercentage() {
+      try {
+        const result = parseFloat(evaluate(currentExpression)) / 100;
+        currentExpression = result.toString();
+        updateDisplay();
+        updatePreview(currentExpression);
+      } catch {
+        updatePreview('Error');
+      }
+    }
+
+    function calculate() {
+      try {
+        const result = evaluate(currentExpression);
+        currentExpression = result.toString();
+        updateDisplay();
+        updatePreview(result);
+      } catch {
+        updatePreview('Error');
+      }
+    }
+
+    function evaluate(expression) {
+      return new Function("return " + expression.replace(/x/g, '*').replace(/÷/g, '/'))();
+    }
+
+    updateDisplay();
+    updatePreview('0');
+    document.addEventListener('keydown', function (e) {
+    const key = e.key;
+
+    if (!isNaN(key)) {
+        appendNumber(key);
+    } else if (key === '.') {
+        appendDecimal();
+    } else if (key === '+' || key === '-') {
+        appendOperator(` ${key} `);
+    } else if (key === '*' || key === 'x') {
+        appendOperator(' x ');
+    } else if (key === '/') {
+        appendOperator(' ÷ ');
+    } else if (key === 'Enter' || key === '=') {
+        e.preventDefault(); // evitar enviar formulario si lo hubiera
+        calculate();
+    } else if (key === 'Backspace') {
+        backspace();
+    } else if (key === 'Escape') {
+        clearDisplay();
+    } else if (key === '%') {
+        calculatePercentage();
+    }
+});
+  </script>
+</body>
+</html>
